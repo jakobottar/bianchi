@@ -7,10 +7,13 @@ opens a yaml config file and provides access to its parameters
 import json
 import os
 import random
+import signal
 
 import jsonargparse
 import namegenerator
 import torch
+
+from .utils import signal_handler
 
 
 def parse_configs() -> jsonargparse.Namespace:
@@ -32,8 +35,9 @@ def parse_configs() -> jsonargparse.Namespace:
     parser.add_argument("--opt.lr", type=float, default=1.0, help="learning rate")
     parser.add_argument("--opt.weight-decay", type=float, default=1e-9, help="optimizer weight decay")
     parser.add_argument("--root", type=str, default="runs", help="root of folder to save runs in")
-    parser.add_argument("-S", "--seed", type=int, default=-1, help="random seed, -1 for random")
+    parser.add_argument("--seed", type=int, default=-1, help="random seed, -1 for random")
     parser.add_argument("--skip-train", action="store_true", help="skip training")
+    parser.add_argument("-S", "--slurm_job_id", type=int, default=-1, help="slurm job id for run tracking")
     # fmt: on
 
     configs = parser.parse_args()
@@ -47,11 +51,30 @@ def parse_configs() -> jsonargparse.Namespace:
 def _set_up_configs(configs: jsonargparse.Namespace) -> jsonargparse.Namespace:
     """Sets up configs after parsing"""
 
+    # see if there's already a run with this slurm job id
+    # and load it if so
+    if configs.slurm_job_id != -1:
+        for name in os.listdir(configs.root):
+            if name.startswith(f"{configs.slurm_job_id}_"):
+                print(
+                    f"found existing run with slurm job id {configs.slurm_job_id}, resuming"
+                )
+                configs.name = name
+                # load previous configs
+                with open(
+                    os.path.join(configs.root, configs.name, "config.json"),
+                    "r",
+                    encoding="utf-8",
+                ) as file:
+                    loaded_configs = json.load(file)
+                configs.update(loaded_configs)
+                return configs
+
     # set name
     if configs.name == "random":
-        configs.name = namegenerator.gen()
+        configs.name = f"{configs.slurm_job_id}_{namegenerator.gen()}"
     else:
-        configs.name = configs.name
+        configs.name = f"{configs.slurm_job_id}_{configs.name}"
 
     # set seed
     if configs.seed != -1:
@@ -81,5 +104,8 @@ def _set_up_configs(configs: jsonargparse.Namespace) -> jsonargparse.Namespace:
             indent=4,
             ensure_ascii=False,
         )
+
+    # Register the signal handler
+    signal.signal(signal.SIGTERM, signal_handler)
 
     return configs

@@ -7,6 +7,8 @@ from jsonargparse import Namespace
 from torchmetrics.classification import MulticlassAccuracy
 from tqdm import tqdm
 
+from . import utils
+
 
 def train_one_epoch(
     model: torch.nn.Module,
@@ -36,23 +38,24 @@ def train_one_epoch(
     )
 
     for images, labels in tbar_loader:
-        # move images to GPU if needed
-        images, labels = images.to(device), labels.to(device)
+        if not utils.interrupted:
+            # move images to GPU if needed
+            images, labels = images.to(device), labels.to(device)
 
-        # zero gradients from previous step
-        optimizer.zero_grad()
+            # zero gradients from previous step
+            optimizer.zero_grad()
 
-        # compute prediction and loss
-        out = model(images, labels)
-        train_loss += out["loss"].item()
+            # compute prediction and loss
+            out = model(images, labels)
+            train_loss += out["loss"].item()
 
-        # backpropagation
-        out["loss"].backward()
-        optimizer.step()
-        scheduler.step()
+            # backpropagation
+            out["loss"].backward()
+            optimizer.step()
+            scheduler.step()
 
-        # update metrics
-        accuracy.update(out["logits"], labels)
+            # update metrics
+            accuracy.update(out["logits"], labels)
 
     return {
         "train_acc": float(accuracy.compute()),
@@ -90,15 +93,16 @@ def val_one_epoch(
 
     with torch.no_grad():
         for images, labels in tbar_loader:
-            # move images to GPU if needed
-            images, labels = images.to(device), labels.to(device)
+            if not utils.interrupted:
+                # move images to GPU if needed
+                images, labels = images.to(device), labels.to(device)
 
-            # compute prediction and loss
-            out = model(images, labels)
-            val_loss += out["loss"].item()
+                # compute prediction and loss
+                out = model(images, labels)
+                val_loss += out["loss"].item()
 
-            # update metrics
-            accuracy.update(out["logits"], labels)
+                # update metrics
+                accuracy.update(out["logits"], labels)
 
     return {
         "val_acc": float(accuracy.compute()),

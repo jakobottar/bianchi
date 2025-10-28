@@ -44,35 +44,62 @@ if __name__ == "__main__":
         eta_min=1e-6 / configs.opt.lr,
     )
 
+    # recover from shutdown if it happened
+    if os.path.exists(os.path.join(configs.root, "partial.pth")):
+        print("recovering from partial shutdown...")
+        model.load_state_dict(torch.load(os.path.join(configs.root, "partial.pth")))
+        optimizer.load_state_dict(
+            torch.load(os.path.join(configs.root, "partial_opt.pth"))
+        )
+        scheduler.load_state_dict(
+            torch.load(os.path.join(configs.root, "partial_sched.pth"))
+        )
+        with open(
+            os.path.join(configs.root, "partial_stats.txt"), "r", encoding="utf-8"
+        ) as file:
+            best_val_acc = float(file.readline().strip())
+            curr_epoch = int(file.readline().strip())
+        print(f"resuming from epoch {curr_epoch}, ", end="")
+        print(f"recovered best val acc: {best_val_acc}")
+        # adjust epochs to account for already completed ones
+        configs.epochs -= curr_epoch
+
     # storage for metrics
     best_val_acc = 0.0
 
     # training loop
     if not configs.skip_train:
         for epoch in range(configs.epochs):
-            print(f"Epoch {epoch + 1}/{configs.epochs}")
+            if not fwk.utils.interrupted:
+                print(f"Epoch {epoch + 1}/{configs.epochs}")
 
-            train_metrics = fwk.train_one_epoch(
-                model, dataloaders["train"], optimizer, scheduler, configs
-            )
-            # acc numbers should always follow the baseball format of .XXX
-            print(
-                f"\ttrain loss: {train_metrics['train_loss']:.3f}, "
-                f"train acc: {train_metrics['train_acc']:.3f}, "
-                f"lr: {train_metrics['learning_rate']:.6f}"
-            )
+                train_metrics = fwk.train_one_epoch(
+                    model, dataloaders["train"], optimizer, scheduler, configs
+                )
+                # acc numbers should always follow the baseball format of .XXX
+                print(
+                    f"\ttrain loss: {train_metrics['train_loss']:.3f}, "
+                    f"train acc: {train_metrics['train_acc']:.3f}, "
+                    f"lr: {train_metrics['learning_rate']:.6f}"
+                )
 
-            val_metrics = fwk.val_one_epoch(model, dataloaders["test"], configs)
-            print(
-                f"\tval loss: {val_metrics['val_loss']:.3f}, "
-                f"val acc: {val_metrics['val_acc']:.3f}"
-            )
+            if not fwk.utils.interrupted:  # interrupt might change during train epoch
+                val_metrics = fwk.val_one_epoch(model, dataloaders["test"], configs)
+                print(
+                    f"\tval loss: {val_metrics['val_loss']:.3f}, "
+                    f"val acc: {val_metrics['val_acc']:.3f}"
+                )
 
-            # save checkpoint last.pth
-            torch.save(model.state_dict(), os.path.join(configs.root, "last.pth"))
-            if val_metrics["val_acc"] > best_val_acc:
-                best_val_acc = val_metrics["val_acc"]
-                torch.save(model.state_dict(), os.path.join(configs.root, "best.pth"))
+                # save checkpoint last.pth
+                torch.save(model.state_dict(), os.path.join(configs.root, "last.pth"))
+                if val_metrics["val_acc"] > best_val_acc:
+                    best_val_acc = val_metrics["val_acc"]
+                    torch.save(
+                        model.state_dict(), os.path.join(configs.root, "best.pth")
+                    )
+
+            if fwk.utils.interrupted:
+                fwk.shutdown(model, optimizer, scheduler, configs, best_val_acc, epoch)
 
     # final val loop with best model
     model.load_state_dict(torch.load(os.path.join(configs.root, "best.pth")))
