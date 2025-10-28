@@ -74,6 +74,9 @@ class ResNet50(ResNet):
 
         return out
 
+    def __str__(self) -> str:
+        return f"ResNet50(num_classes={self.fc.out_features}, loss_fn={self.loss_fn})"
+
 
 class ResNet18(ResNet):
     """
@@ -128,6 +131,9 @@ class ResNet18(ResNet):
             out["loss"] = self.loss_fn(logits_cls, targets)
 
         return out
+
+    def __str__(self) -> str:
+        return f"ResNet18(num_classes={self.fc.out_features}, loss_fn={self.loss_fn})"
 
 
 def _build_resnet(configs: Namespace) -> nn.Module:

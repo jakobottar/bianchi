@@ -31,7 +31,7 @@ if __name__ == "__main__":
     model.to(device="cuda" if torch.cuda.is_available() else "cpu")
 
     # initialize optimizer
-    optimizer = torch.optim.Adam(
+    optimizer = torch.optim.AdamW(
         model.parameters(), lr=configs.opt.lr, weight_decay=configs.opt.weight_decay
     )
 
@@ -42,10 +42,37 @@ if __name__ == "__main__":
         eta_min=1e-6 / configs.opt.lr,
     )
 
-    # training loop would go here
+    # storage for metrics
+    best_val_acc = 0.0
 
-    # validation loop would go here
+    # training loop
+    if not configs.skip_train:
+        for epoch in range(configs.epochs):
+            print(f"Epoch {epoch + 1}/{configs.epochs}")
 
-    # save final checkpoint would go here
+            train_metrics = fwk.train_one_epoch(
+                model, dataloaders["train"], optimizer, scheduler, configs
+            )
+            # acc numbers should always follow the baseball format of .XXX
+            print(
+                f"\ttrain loss: {train_metrics['train_loss']:.3f}, "
+                f"train acc: {train_metrics['train_acc']:.3f}, "
+                f"lr: {train_metrics['learning_rate']:.6f}"
+            )
+
+            val_metrics = fwk.val_one_epoch(model, dataloaders["test"], configs)
+            print(
+                f"\tval loss: {val_metrics['val_loss']:.3f}, "
+                f"val acc: {val_metrics['val_acc']:.3f}"
+            )
+
+            # save checkpoint last.pth
+
+            if val_metrics["val_acc"] > best_val_acc:
+                best_val_acc = val_metrics["val_acc"]
+                # save checkpoint best.pth
+
+    # final val loop with best model
+    val_metrics = fwk.val_one_epoch(model, dataloaders["test"], configs)
 
     print("done!")

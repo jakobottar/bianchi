@@ -2,11 +2,11 @@
 
 ## TODOs:
   
- - [ ] `json` configs a la OpenOOD
+ - [x] `json` configs a la OpenOOD
  - [ ] Built-in multiGPU
  - [ ] Slurm auto-resume
- - [ ] drop in datasets
- - [ ] loss functions handled in model def
+ - [x] drop in datasets
+ - [x] loss functions handled in model def
  - [ ] faster augmentations
  - [ ] lots of tests for everything
 

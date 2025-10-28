@@ -15,4 +15,4 @@ micromamba activate edo
 
 echo $SLURM_JOB_NAME
 
-python main.py
+python main.py --no-tqdm -E 25
