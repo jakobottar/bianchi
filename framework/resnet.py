@@ -1,3 +1,5 @@
+# pylint: disable=dangerous-default-value
+
 """
 resnet model definitions
 
@@ -19,6 +21,10 @@ from torchvision.models.resnet import BasicBlock, Bottleneck, ResNet
 
 
 class ResNet50(ResNet):
+    """
+    resnet50 model
+    """
+
     def __init__(
         self,
         loss_fn: nn.Module,
@@ -70,6 +76,10 @@ class ResNet50(ResNet):
 
 
 class ResNet18(ResNet):
+    """
+    resnet18 model
+    """
+
     def __init__(
         self,
         loss_fn: nn.Module,
