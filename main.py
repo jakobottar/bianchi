@@ -2,6 +2,8 @@
 Sample main file
 """
 
+import os
+
 import torch
 
 import framework as fwk
@@ -67,12 +69,13 @@ if __name__ == "__main__":
             )
 
             # save checkpoint last.pth
-
+            torch.save(model.state_dict(), os.path.join(configs.root, "last.pth"))
             if val_metrics["val_acc"] > best_val_acc:
                 best_val_acc = val_metrics["val_acc"]
-                # save checkpoint best.pth
+                torch.save(model.state_dict(), os.path.join(configs.root, "best.pth"))
 
     # final val loop with best model
+    model.load_state_dict(torch.load(os.path.join(configs.root, "best.pth")))
     val_metrics = fwk.val_one_epoch(model, dataloaders["test"], configs)
 
     print("done!")
