@@ -58,6 +58,14 @@ This document summarizes the test coverage for the bianchi framework functions.
 - ✅ Root directory path handling
 - ✅ Download parameter configuration
 
+**`build_dataloaders` Function Tests:**
+- ✅ DataLoader creation with provided dataset map
+- ✅ DataLoader creation without dataset map (auto-builds datasets)
+- ✅ Correct DataLoader parameters (batch_size, num_workers, shuffle)
+- ✅ Train dataloader shuffle=True, test dataloader shuffle=False
+- ✅ Different batch size configurations
+- ✅ Different worker count configurations
+
 **Dataset Integration Tests:**
 - ✅ Consistency between MNIST and CIFAR-10 structures
 - ✅ Config validation across all dataset types
@@ -116,12 +124,12 @@ To run specific test files:
 
 ## Test Results
 
-- **Total Tests:** 32
+- **Total Tests:** 38
 - **Config Tests:** 14 (11 + 3)
-- **Data Tests:** 18
+- **Data Tests:** 24 (18 dataset + 6 dataloader)
 - **Status:** All passing ✅
 - **Coverage:** Config and Data modules comprehensively tested
-- **Execution Time:** ~3.3 seconds for full suite
+- **Execution Time:** ~2.7 seconds for full suite
 
 ## Test Categories
 

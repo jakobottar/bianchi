@@ -18,3 +18,5 @@ if __name__ == "__main__":
     for split, dataset in datasets.items():
         if split != "num_classes":
             print(f"\t{split}: {dataset}")
+
+    dataloaders = fwk.build_dataloaders(configs, datasets)

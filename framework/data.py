@@ -29,6 +29,29 @@ def build_datasets(configs: Namespace) -> dict:
         #     return _build_xxx_datasets(configs)
 
 
+def build_dataloaders(configs: Namespace, dataset_map: dict | None) -> dict:
+    """Builds dataloaders from datasets"""
+
+    if dataset_map is None:
+        dataset_map = build_datasets(configs)
+
+    train_loader = torch.utils.data.DataLoader(
+        dataset_map["train"],
+        batch_size=configs.data.batch_size,
+        shuffle=True,
+        num_workers=configs.data.workers,
+    )
+
+    test_loader = torch.utils.data.DataLoader(
+        dataset_map["test"],
+        batch_size=configs.data.batch_size,
+        shuffle=False,
+        num_workers=configs.data.workers,
+    )
+
+    return {"train": train_loader, "test": test_loader}
+
+
 def _build_mnist_datasets(configs: Namespace) -> dict:
     """Builds MNIST datasets"""
 
