@@ -13,7 +13,7 @@ import jsonargparse
 import pytest
 import torch
 
-from framework.config import parse_configs, set_up_configs
+from framework.config import _set_up_configs, parse_configs
 
 
 class TestSetUpConfigs:
@@ -31,7 +31,7 @@ class TestSetUpConfigs:
             configs.config = None  # Add config key to avoid KeyError
 
             with patch("namegenerator.gen", return_value="test-generated-name"):
-                result_configs = set_up_configs(configs)
+                result_configs = _set_up_configs(configs)
 
                 assert result_configs.name == "test-generated-name"
                 assert os.path.exists(result_configs.root)
@@ -51,7 +51,7 @@ class TestSetUpConfigs:
             configs.root = temp_dir
             configs.config = None  # Add config key to avoid KeyError
 
-            result_configs = set_up_configs(configs)
+            result_configs = _set_up_configs(configs)
 
             assert result_configs.name == "my_custom_run"
             assert os.path.exists(result_configs.root)
@@ -75,7 +75,7 @@ class TestSetUpConfigs:
                 "torch.manual_seed"
             ) as mock_torch_seed:
 
-                result_configs = set_up_configs(configs)
+                result_configs = _set_up_configs(configs)
 
                 mock_random_seed.assert_called_once_with(42)
                 mock_torch_seed.assert_called_once_with(42)
@@ -99,7 +99,7 @@ class TestSetUpConfigs:
                 "torch.manual_seed"
             ) as mock_torch_seed:
 
-                result_configs = set_up_configs(configs)
+                result_configs = _set_up_configs(configs)
 
                 mock_random_seed.assert_not_called()
                 mock_torch_seed.assert_not_called()
@@ -118,7 +118,7 @@ class TestSetUpConfigs:
             configs.root = temp_dir
             configs.config = None  # Add config key to avoid KeyError
 
-            result_configs = set_up_configs(configs)
+            result_configs = _set_up_configs(configs)
 
             expected_path = os.path.join(temp_dir, "test_dir_creation")
             assert result_configs.root == expected_path
@@ -142,7 +142,7 @@ class TestSetUpConfigs:
             configs.epochs = 5
             configs.config = "some_config_path"  # This should be removed
 
-            result_configs = set_up_configs(configs)
+            result_configs = _set_up_configs(configs)
 
             config_file_path = os.path.join(result_configs.root, "config.json")
             assert os.path.exists(config_file_path)
@@ -172,7 +172,7 @@ class TestSetUpConfigs:
             configs.some_path = Path("/some/test/path")
             configs.config = "config_path"
 
-            result_configs = set_up_configs(configs)
+            result_configs = _set_up_configs(configs)
 
             config_file_path = os.path.join(result_configs.root, "config.json")
             with open(config_file_path, "r") as f:
@@ -200,7 +200,7 @@ class TestConfigIntegration:
             configs.config = None
 
             with patch("namegenerator.gen", return_value="mighty-zebra-42"):
-                result = set_up_configs(configs)
+                result = _set_up_configs(configs)
 
                 assert result.name == "mighty-zebra-42"
                 assert "mighty-zebra-42" in result.root
@@ -238,7 +238,7 @@ class TestConfigIntegration:
                 "torch.manual_seed", side_effect=mock_torch_seed
             ):
 
-                result = set_up_configs(configs)
+                result = _set_up_configs(configs)
 
                 assert random_called == [12345]
                 assert torch_called == [12345]
@@ -261,7 +261,7 @@ class TestConfigIntegration:
             configs.model.arch = "resnet18"
             configs.epochs = 10
 
-            result = set_up_configs(configs)
+            result = _set_up_configs(configs)
 
             # Check directory creation
             expected_dir = os.path.join(temp_dir, "test_creation")
@@ -296,7 +296,7 @@ class TestConfigIntegration:
             configs.root = temp_dir
             # No config key added - should work fine now
 
-            result = set_up_configs(configs)
+            result = _set_up_configs(configs)
 
             assert result.name == "robust_test"
             assert os.path.exists(result.root)

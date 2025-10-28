@@ -21,6 +21,7 @@ def parse_configs() -> jsonargparse.Namespace:
     # fmt: off
     parser.add_argument("-c", "--config", action="config", help="config file location")
     parser.add_argument("--data.batch_size", type=int, default=8, help="batch size")
+    parser.add_argument("--data.name", type=str, default="cifar10", help="dataset name")
     parser.add_argument("-r", "--data.root", type=str, default="./data/", help="dataset filepath")
     parser.add_argument("--data.workers", type=int, default=2, help="dataloader worker threads")
     parser.add_argument("-E", "--epochs", type=int, default=1, help="number of epochs to train for")
@@ -38,12 +39,12 @@ def parse_configs() -> jsonargparse.Namespace:
     configs = parser.parse_args()
 
     # set up seeds and pre-training files
-    configs = set_up_configs(configs)
+    configs = _set_up_configs(configs)
 
     return configs
 
 
-def set_up_configs(configs: jsonargparse.Namespace) -> jsonargparse.Namespace:
+def _set_up_configs(configs: jsonargparse.Namespace) -> jsonargparse.Namespace:
     """Sets up configs after parsing"""
 
     # set name

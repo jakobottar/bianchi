@@ -1,46 +1,73 @@
-# Test Coverage Summary for Config Functions
+# Test Coverage Summary for Framework Functions
 
-This document summarizes the test coverage for the `parse_configs` and `set_up_configs` functions in the bianchi framework.
+This document summarizes the test coverage for the bianchi framework functions.
 
 ## Test Files Created
 
 1. **`tests/test_config.py`** - Primary test suite for `set_up_configs` function
 2. **`tests/test_parse_configs.py`** - Additional tests for `parse_configs` function  
-3. **`tests/__init__.py`** - Makes tests directory a Python package
-4. **`pyproject.toml`** - Pytest configuration
+3. **`tests/test_data.py`** - Comprehensive tests for dataset building functions
+4. **`tests/__init__.py`** - Makes tests directory a Python package
+5. **`pyproject.toml`** - Pytest configuration
 
 ## Functions Tested
 
-### `set_up_configs` Function Tests
+### Config Module (`framework/config.py`)
 
-**Basic Functionality:**
+**`set_up_configs` Function Tests:**
 - ✅ Random name generation using `namegenerator.gen()`
 - ✅ Custom name handling (preserves user-provided names)
 - ✅ Directory creation in the specified root path
 - ✅ Config file saving as JSON format
-
-**Seed Management:**
 - ✅ Deterministic seed setting (calls `random.seed()` and `torch.manual_seed()`)
 - ✅ No seed setting when seed = -1 (skips seed functions)
 - ✅ CUDNN deterministic mode activation when seed is set
-
-**Data Handling:**
 - ✅ Path object conversion to strings in saved config
 - ✅ Config key removal from saved output (avoids circular references)
 - ✅ Robust handling of missing config keys
 - ✅ Nested namespace handling (e.g., `configs.data.batch_size`)
 
-### `parse_configs` Function Tests
-
-**Configuration Loading:**
+**`parse_configs` Function Tests:**
 - ✅ Default argument parsing with valid config files
 - ✅ Command line argument overrides of config file values
 - ✅ Integration with `set_up_configs` (full workflow testing)
-
-**Argument Handling:**
 - ✅ Proper namespace object creation
 - ✅ Config file validation and parsing
 - ✅ Command line parameter precedence over config file
+
+### Data Module (`framework/data.py`)
+
+**`build_datasets` Function Tests:**
+- ✅ MNIST dataset building route selection
+- ✅ CIFAR-10 dataset building route selection
+- ✅ Unsupported dataset error handling
+- ✅ Case insensitive dataset name matching
+- ✅ Config validation and error handling
+
+**`_build_mnist_datasets` Function Tests:**
+- ✅ Correct dataset structure returned (train/test/num_classes)
+- ✅ Proper torchvision.datasets.MNIST calls with correct parameters
+- ✅ Transform composition and application
+- ✅ Root directory path handling
+- ✅ Download parameter configuration
+
+**`_build_cifar10_datasets` Function Tests:**
+- ✅ Correct dataset structure returned (train/test/num_classes)
+- ✅ Proper torchvision.datasets.CIFAR10 calls with correct parameters
+- ✅ Transform composition and application
+- ✅ Root directory path handling
+- ✅ Download parameter configuration
+
+**Dataset Integration Tests:**
+- ✅ Consistency between MNIST and CIFAR-10 structures
+- ✅ Config validation across all dataset types
+- ✅ Root path handling with various path formats
+- ✅ Error handling for invalid configurations
+
+**Transform Functionality Tests:**
+- ✅ Transform composition verification
+- ✅ ToTensor transform inclusion
+- ✅ Identical transforms for train/test splits
 
 ## Test Features
 
@@ -89,7 +116,52 @@ To run specific test files:
 
 ## Test Results
 
-- **Total Tests:** 14
+- **Total Tests:** 32
+- **Config Tests:** 14 (11 + 3)
+- **Data Tests:** 18
 - **Status:** All passing ✅
-- **Coverage:** Both functions comprehensively tested
-- **Execution Time:** ~1.6 seconds for full suite
+- **Coverage:** Config and Data modules comprehensively tested
+- **Execution Time:** ~3.3 seconds for full suite
+
+## Test Categories
+
+### Unit Tests
+- Individual function testing with mocked dependencies
+- Parameter validation and error handling
+- Return value structure verification
+
+### Integration Tests  
+- End-to-end workflow testing
+- Cross-function compatibility
+- Real filesystem operations (with cleanup)
+
+### Error Handling Tests
+- Invalid input validation
+- Missing configuration handling
+- Filesystem permission errors
+- Unsupported dataset types
+
+## Notable Test Features
+
+**Comprehensive Mocking:**
+- Mock torchvision datasets to avoid actual downloads
+- Mock filesystem operations for controlled testing
+- Mock external dependencies (namegenerator, torch functions)
+
+**Edge Case Coverage:**
+- Case sensitivity in dataset names
+- Various root path formats and invalid paths
+- Missing configuration attributes
+- Transform composition and validation
+
+**Isolation & Safety:**
+- All tests use temporary directories
+- Proper cleanup with try/finally blocks
+- No side effects between tests
+- No actual dataset downloads during testing
+
+**Real-world Scenarios:**
+- Command line argument parsing with real sys.argv mocking
+- Config file loading and validation
+- Directory creation and JSON serialization
+- Transform pipeline verification
