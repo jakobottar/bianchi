@@ -15,8 +15,8 @@ from torch.utils.data import Dataset
 from framework.data import (
     _build_cifar10_datasets,
     _build_mnist_datasets,
-    build_datasets,
     build_dataloaders,
+    build_datasets,
 )
 
 
@@ -524,20 +524,20 @@ class TestBuildDataloaders:
         dataset_map = {
             "train": mock_train_dataset,
             "test": mock_test_dataset,
-            "num_classes": 10
+            "num_classes": 10,
         }
 
-        with patch('torch.utils.data.DataLoader') as mock_dataloader:
+        with patch("torch.utils.data.DataLoader") as mock_dataloader:
             mock_train_loader = MagicMock()
             mock_test_loader = MagicMock()
-            
+
             # Configure DataLoader to return different loaders for train/test
             def dataloader_side_effect(dataset, **kwargs):
                 if dataset == mock_train_dataset:
                     return mock_train_loader
                 else:
                     return mock_test_loader
-            
+
             mock_dataloader.side_effect = dataloader_side_effect
 
             result = build_dataloaders(configs, dataset_map)
@@ -564,30 +564,30 @@ class TestBuildDataloaders:
         dataset_map = {
             "train": mock_train_dataset,
             "test": mock_test_dataset,
-            "num_classes": 10
+            "num_classes": 10,
         }
 
-        with patch('torch.utils.data.DataLoader') as mock_dataloader:
+        with patch("torch.utils.data.DataLoader") as mock_dataloader:
             mock_dataloader.return_value = MagicMock()
 
             build_dataloaders(configs, dataset_map)
 
             # Check the calls to DataLoader
             calls = mock_dataloader.call_args_list
-            
+
             # First call should be for training dataloader
             train_call = calls[0]
             assert train_call[0][0] == mock_train_dataset  # dataset argument
-            assert train_call[1]['batch_size'] == 64
-            assert train_call[1]['shuffle'] is True
-            assert train_call[1]['num_workers'] == 2
+            assert train_call[1]["batch_size"] == 64
+            assert train_call[1]["shuffle"] is True
+            assert train_call[1]["num_workers"] == 2
 
             # Second call should be for test dataloader
             test_call = calls[1]
             assert test_call[0][0] == mock_test_dataset  # dataset argument
-            assert test_call[1]['batch_size'] == 64
-            assert test_call[1]['shuffle'] is False
-            assert test_call[1]['num_workers'] == 2
+            assert test_call[1]["batch_size"] == 64
+            assert test_call[1]["shuffle"] is False
+            assert test_call[1]["num_workers"] == 2
 
     def test_build_dataloaders_without_dataset_map(self):
         """Test building dataloaders without providing dataset map (should build datasets)"""
@@ -601,12 +601,13 @@ class TestBuildDataloaders:
         mock_dataset_map = {
             "train": MagicMock(),
             "test": MagicMock(),
-            "num_classes": 10
+            "num_classes": 10,
         }
 
-        with patch('framework.data.build_datasets') as mock_build_datasets, \
-             patch('torch.utils.data.DataLoader') as mock_dataloader:
-            
+        with patch("framework.data.build_datasets") as mock_build_datasets, patch(
+            "torch.utils.data.DataLoader"
+        ) as mock_dataloader:
+
             mock_build_datasets.return_value = mock_dataset_map
             mock_dataloader.return_value = MagicMock()
 
@@ -614,14 +615,14 @@ class TestBuildDataloaders:
 
             # Should call build_datasets when dataset_map is None
             mock_build_datasets.assert_called_once_with(configs)
-            
+
             # Should create dataloaders with the built datasets
             assert mock_dataloader.call_count == 2
 
     def test_build_dataloaders_different_batch_sizes(self):
         """Test dataloaders with different batch sizes"""
         batch_sizes = [1, 8, 32, 128, 256]
-        
+
         for batch_size in batch_sizes:
             configs = jsonargparse.Namespace()
             configs.data = jsonargparse.Namespace()
@@ -632,10 +633,10 @@ class TestBuildDataloaders:
             dataset_map = {
                 "train": mock_dataset,
                 "test": mock_dataset,
-                "num_classes": 10
+                "num_classes": 10,
             }
 
-            with patch('torch.utils.data.DataLoader') as mock_dataloader:
+            with patch("torch.utils.data.DataLoader") as mock_dataloader:
                 mock_dataloader.return_value = MagicMock()
 
                 build_dataloaders(configs, dataset_map)
@@ -643,12 +644,12 @@ class TestBuildDataloaders:
                 # Check that the correct batch size was used
                 calls = mock_dataloader.call_args_list
                 for call in calls:
-                    assert call[1]['batch_size'] == batch_size
+                    assert call[1]["batch_size"] == batch_size
 
     def test_build_dataloaders_worker_configuration(self):
         """Test dataloaders with different worker configurations"""
         worker_counts = [0, 1, 2, 4, 8]
-        
+
         for workers in worker_counts:
             configs = jsonargparse.Namespace()
             configs.data = jsonargparse.Namespace()
@@ -659,10 +660,10 @@ class TestBuildDataloaders:
             dataset_map = {
                 "train": mock_dataset,
                 "test": mock_dataset,
-                "num_classes": 10
+                "num_classes": 10,
             }
 
-            with patch('torch.utils.data.DataLoader') as mock_dataloader:
+            with patch("torch.utils.data.DataLoader") as mock_dataloader:
                 mock_dataloader.return_value = MagicMock()
 
                 build_dataloaders(configs, dataset_map)
@@ -670,7 +671,7 @@ class TestBuildDataloaders:
                 # Check that the correct number of workers was used
                 calls = mock_dataloader.call_args_list
                 for call in calls:
-                    assert call[1]['num_workers'] == workers
+                    assert call[1]["num_workers"] == workers
 
     def test_build_dataloaders_shuffle_behavior(self):
         """Test that train loader shuffles but test loader doesn't"""
@@ -684,20 +685,20 @@ class TestBuildDataloaders:
         dataset_map = {
             "train": mock_train_dataset,
             "test": mock_test_dataset,
-            "num_classes": 10
+            "num_classes": 10,
         }
 
-        with patch('torch.utils.data.DataLoader') as mock_dataloader:
+        with patch("torch.utils.data.DataLoader") as mock_dataloader:
             mock_dataloader.return_value = MagicMock()
 
             build_dataloaders(configs, dataset_map)
 
             calls = mock_dataloader.call_args_list
-            
+
             # Train dataloader should have shuffle=True
             train_call = calls[0]
-            assert train_call[1]['shuffle'] is True
-            
+            assert train_call[1]["shuffle"] is True
+
             # Test dataloader should have shuffle=False
             test_call = calls[1]
-            assert test_call[1]['shuffle'] is False
+            assert test_call[1]["shuffle"] is False

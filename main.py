@@ -12,7 +12,7 @@ if __name__ == "__main__":
 
     # build datasets
     datasets = fwk.build_datasets(configs)
-    configs.num_classes = datasets["num_classes"]
+    configs.data.num_classes = datasets["num_classes"]
 
     print("datasets:")
     for split, dataset in datasets.items():
@@ -20,3 +20,7 @@ if __name__ == "__main__":
             print(f"\t{split}: {dataset}")
 
     dataloaders = fwk.build_dataloaders(configs, datasets)
+
+    # build model
+    model = fwk.build_model(configs)
+    print(f"model: {model}")

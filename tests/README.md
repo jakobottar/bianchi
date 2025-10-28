@@ -7,8 +7,9 @@ This document summarizes the test coverage for the bianchi framework functions.
 1. **`tests/test_config.py`** - Primary test suite for `set_up_configs` function
 2. **`tests/test_parse_configs.py`** - Additional tests for `parse_configs` function  
 3. **`tests/test_data.py`** - Comprehensive tests for dataset building functions
-4. **`tests/__init__.py`** - Makes tests directory a Python package
-5. **`pyproject.toml`** - Pytest configuration
+4. **`tests/test_model.py`** - Comprehensive tests for model building and ResNet implementations
+5. **`tests/__init__.py`** - Makes tests directory a Python package
+6. **`pyproject.toml`** - Pytest configuration
 
 ## Functions Tested
 
@@ -77,6 +78,40 @@ This document summarizes the test coverage for the bianchi framework functions.
 - ✅ ToTensor transform inclusion
 - ✅ Identical transforms for train/test splits
 
+### Model Module (`framework/model.py` and `framework/resnet.py`)
+
+**`build_model` Function Tests:**
+- ✅ ResNet18 model building route selection
+- ✅ ResNet50 model building route selection
+- ✅ Case insensitive architecture name matching
+- ✅ Unsupported architecture error handling
+- ✅ Config validation and error handling
+
+**`_build_resnet` Function Tests:**
+- ✅ ResNet18 creation with correct parameters
+- ✅ ResNet50 creation with correct parameters
+- ✅ Different number of classes configuration
+- ✅ Checkpoint loading functionality
+- ✅ Unsupported ResNet architecture error handling
+
+**`ResNet18` Class Tests:**
+- ✅ Proper initialization (loss function, feature size, output classes)
+- ✅ Forward pass without targets (returns logits, encoding, loss=None)
+- ✅ Forward pass with targets (computes and returns loss)
+- ✅ Weight initialization validation (Kaiming normal, batch norm constants)
+
+**`ResNet50` Class Tests:**
+- ✅ Proper initialization (loss function, feature size, output classes)
+- ✅ Forward pass without targets (returns logits, encoding, loss=None)
+- ✅ Forward pass with targets (computes and returns loss)
+- ✅ Different input batch sizes handling
+
+**Model Integration Tests:**
+- ✅ End-to-end model building workflow
+- ✅ Consistency across different ResNet architectures
+- ✅ Checkpoint loading integration with real files
+- ✅ Model interface standardization (logits, loss, encoding output format)
+
 ## Test Features
 
 **Isolation & Cleanup:**
@@ -95,20 +130,6 @@ This document summarizes the test coverage for the bianchi framework functions.
 - Seed value edge cases (-1 vs positive integers)
 - Directory creation with existing paths
 
-## Code Improvements Made
-
-During testing, we also improved the robustness of the original code:
-
-**`framework/config.py` Enhancement:**
-```python
-# Before (could cause KeyError)
-del configs_out["config"]
-
-# After (robust handling)
-if "config" in configs_out:
-    del configs_out["config"]
-```
-
 ## Running the Tests
 
 To run all tests:
@@ -124,12 +145,13 @@ To run specific test files:
 
 ## Test Results
 
-- **Total Tests:** 38
+- **Total Tests:** 62
 - **Config Tests:** 14 (11 + 3)
 - **Data Tests:** 24 (18 dataset + 6 dataloader)
+- **Model Tests:** 24 (5 build_model + 5 _build_resnet + 4 ResNet18 + 4 ResNet50 + 3 integration + 3 error handling)
 - **Status:** All passing ✅
-- **Coverage:** Config and Data modules comprehensively tested
-- **Execution Time:** ~2.7 seconds for full suite
+- **Coverage:** Config, Data, and Model modules comprehensively tested
+- **Execution Time:** ~8.5 seconds for full suite
 
 ## Test Categories
 
@@ -173,3 +195,6 @@ To run specific test files:
 - Config file loading and validation
 - Directory creation and JSON serialization
 - Transform pipeline verification
+- Model forward passes with realistic input sizes
+- Checkpoint loading and state dict management
+- PyTorch model initialization and weight verification
