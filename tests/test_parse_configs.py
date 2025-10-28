@@ -8,7 +8,6 @@ import tempfile
 from unittest.mock import patch
 
 import jsonargparse
-import pytest
 
 from framework.config import parse_configs
 

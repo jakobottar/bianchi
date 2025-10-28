@@ -7,13 +7,12 @@ import os
 import random
 import shutil
 import tempfile
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import jsonargparse
-import pytest
 import torch
 
-from framework.config import _set_up_configs, parse_configs
+from framework.config import _set_up_configs
 
 
 class TestSetUpConfigs:
@@ -75,7 +74,7 @@ class TestSetUpConfigs:
                 "torch.manual_seed"
             ) as mock_torch_seed:
 
-                result_configs = _set_up_configs(configs)
+                _set_up_configs(configs)
 
                 mock_random_seed.assert_called_once_with(42)
                 mock_torch_seed.assert_called_once_with(42)
@@ -99,7 +98,7 @@ class TestSetUpConfigs:
                 "torch.manual_seed"
             ) as mock_torch_seed:
 
-                result_configs = _set_up_configs(configs)
+                _set_up_configs(configs)
 
                 mock_random_seed.assert_not_called()
                 mock_torch_seed.assert_not_called()
@@ -148,7 +147,7 @@ class TestSetUpConfigs:
             assert os.path.exists(config_file_path)
 
             # Read and verify the saved config
-            with open(config_file_path, "r") as f:
+            with open(config_file_path, "r", encoding="utf-8") as f:
                 saved_config = json.load(f)
 
             assert saved_config["data"]["batch_size"] == 16
@@ -175,7 +174,7 @@ class TestSetUpConfigs:
             result_configs = _set_up_configs(configs)
 
             config_file_path = os.path.join(result_configs.root, "config.json")
-            with open(config_file_path, "r") as f:
+            with open(config_file_path, "r", encoding="utf-8") as f:
                 saved_config = json.load(f)
 
             assert saved_config["some_path"] == "/some/test/path"
@@ -238,7 +237,7 @@ class TestConfigIntegration:
                 "torch.manual_seed", side_effect=mock_torch_seed
             ):
 
-                result = _set_up_configs(configs)
+                _set_up_configs(configs)
 
                 assert random_called == [12345]
                 assert torch_called == [12345]
@@ -273,7 +272,7 @@ class TestConfigIntegration:
             config_file = os.path.join(expected_dir, "config.json")
             assert os.path.exists(config_file)
 
-            with open(config_file, "r") as f:
+            with open(config_file, "r", encoding="utf-8") as f:
                 saved_config = json.load(f)
 
             assert saved_config["name"] == "test_creation"

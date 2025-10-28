@@ -2,15 +2,12 @@
 Tests for dataset building functions
 """
 
-import os
 import shutil
 import tempfile
-from unittest.mock import MagicMock, call, patch
+from unittest.mock import MagicMock, patch
 
 import jsonargparse
 import pytest
-import torch
-from torch.utils.data import Dataset
 
 from framework.data import (
     _build_cifar10_datasets,
@@ -137,7 +134,7 @@ class TestMnistDatasets:
                 mock_test_dataset = MagicMock()
 
                 # Configure the mock to return different instances for train/test
-                def mnist_side_effect(*args, **kwargs):
+                def mnist_side_effect(*_args, **kwargs):
                     if kwargs.get("train", True):
                         return mock_train_dataset
                     else:
@@ -242,7 +239,7 @@ class TestCifar10Datasets:
                 mock_test_dataset = MagicMock()
 
                 # Configure the mock to return different instances for train/test
-                def cifar10_side_effect(*args, **kwargs):
+                def cifar10_side_effect(*_args, **kwargs):
                     if kwargs.get("train", True):
                         return mock_train_dataset
                     else:
@@ -532,7 +529,7 @@ class TestBuildDataloaders:
             mock_test_loader = MagicMock()
 
             # Configure DataLoader to return different loaders for train/test
-            def dataloader_side_effect(dataset, **kwargs):
+            def dataloader_side_effect(dataset, **_kwargs):
                 if dataset == mock_train_dataset:
                     return mock_train_loader
                 else:
@@ -611,7 +608,7 @@ class TestBuildDataloaders:
             mock_build_datasets.return_value = mock_dataset_map
             mock_dataloader.return_value = MagicMock()
 
-            result = build_dataloaders(configs, None)
+            _ = build_dataloaders(configs, None)
 
             # Should call build_datasets when dataset_map is None
             mock_build_datasets.assert_called_once_with(configs)
@@ -643,8 +640,8 @@ class TestBuildDataloaders:
 
                 # Check that the correct batch size was used
                 calls = mock_dataloader.call_args_list
-                for call in calls:
-                    assert call[1]["batch_size"] == batch_size
+                for call_args in calls:
+                    assert call_args[1]["batch_size"] == batch_size
 
     def test_build_dataloaders_worker_configuration(self):
         """Test dataloaders with different worker configurations"""
@@ -670,8 +667,8 @@ class TestBuildDataloaders:
 
                 # Check that the correct number of workers was used
                 calls = mock_dataloader.call_args_list
-                for call in calls:
-                    assert call[1]["num_workers"] == workers
+                for call_args in calls:
+                    assert call_args[1]["num_workers"] == workers
 
     def test_build_dataloaders_shuffle_behavior(self):
         """Test that train loader shuffles but test loader doesn't"""
