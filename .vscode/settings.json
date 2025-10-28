@@ -1,8 +1,10 @@
 {
     "files.autoSave": "onFocusChange",
     "editor.formatOnSave": true,
+    "python.defaultInterpreterPath": "/home/jakobj/.micromamba/envs/edo/bin/python",
     "python.testing.pytestEnabled": true,
     "python.testing.pytestArgs": [
         "tests"
-    ]
+    ],
+    "python.analysis.typeCheckingMode": "basic"
 }
