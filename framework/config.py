@@ -16,6 +16,22 @@ import torch
 from .utils import signal_handler
 
 
+def _dict_to_namespace(d):
+    """Recursively convert dictionary to jsonargparse.Namespace"""
+    if isinstance(d, dict):
+        # Convert nested dictionaries recursively
+        converted = {}
+        for key, value in d.items():
+            converted[key] = _dict_to_namespace(value)
+        return jsonargparse.Namespace(**converted)
+    elif isinstance(d, list):
+        # Convert list elements recursively
+        return [_dict_to_namespace(item) for item in d]
+    else:
+        # Return primitive values as-is
+        return d
+
+
 def parse_configs() -> jsonargparse.Namespace:
     """Parses command line arguments and config files"""
 
@@ -60,14 +76,24 @@ def _set_up_configs(configs: jsonargparse.Namespace) -> jsonargparse.Namespace:
                     f"found existing run with slurm job id {configs.slurm_job_id}, resuming"
                 )
                 configs.name = name
+                # Store the current root and full path before loading
+                base_root = configs.root
+                run_path = os.path.join(base_root, name)
+
                 # load previous configs
                 with open(
-                    os.path.join(configs.root, configs.name, "config.json"),
+                    os.path.join(base_root, name, "config.json"),
                     "r",
                     encoding="utf-8",
                 ) as file:
                     loaded_configs = json.load(file)
-                configs.update(loaded_configs)
+
+                # Convert loaded dict to Namespace for compatibility with jsonargparse
+                loaded_namespace = _dict_to_namespace(loaded_configs)
+                configs.update(loaded_namespace)
+
+                # Restore the correct root path
+                configs.root = run_path
                 return configs
 
     # set name

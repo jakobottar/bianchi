@@ -50,21 +50,7 @@ if __name__ == "__main__":
 
     # recover from shutdown if it happened
     if os.path.exists(os.path.join(configs.root, "partial.pth")):
-        print("recovering from partial shutdown...")
-        model.load_state_dict(torch.load(os.path.join(configs.root, "partial.pth")))
-        optimizer.load_state_dict(
-            torch.load(os.path.join(configs.root, "partial_opt.pth"))
-        )
-        scheduler.load_state_dict(
-            torch.load(os.path.join(configs.root, "partial_sched.pth"))
-        )
-        with open(
-            os.path.join(configs.root, "partial_stats.txt"), "r", encoding="utf-8"
-        ) as file:
-            best_val_acc = float(file.readline().strip())
-            start_epoch = int(file.readline().strip())
-        print(f"resuming from epoch {start_epoch+1}, ", end="")
-        print(f"recovered best val acc: {best_val_acc:.3f}")
+        best_val_acc, start_epoch = fwk.resume(model, optimizer, scheduler, configs)
 
     # training loop
     if not configs.skip_train:
