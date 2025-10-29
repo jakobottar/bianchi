@@ -71,7 +71,7 @@ def _set_up_configs(configs: jsonargparse.Namespace) -> jsonargparse.Namespace:
 
     # see if there's already a run with this slurm job id
     # and load it if so
-    if configs.slurm_job_id != -1:
+    if configs.slurm_job_id != -1 and os.path.isdir(configs.root):
         for name in os.listdir(configs.root):
             if name.startswith(f"{configs.slurm_job_id}_"):
                 resume_message = f"found existing run with slurm job id {configs.slurm_job_id}, resuming"
