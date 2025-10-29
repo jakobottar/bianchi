@@ -135,7 +135,7 @@ class TestTrainOneEpoch:
             assert mock_accuracy.update.call_count == len(dataloader)
 
             # Check that accuracy was initialized with correct num_classes
-            mock_accuracy_class.assert_called_once_with(num_classes=5)
+            mock_accuracy_class.assert_called_once_with(num_classes=5, average="macro")
 
     def test_train_one_epoch_tqdm_configuration(self):
         """Test tqdm progress bar configuration"""
@@ -252,7 +252,7 @@ class TestValOneEpoch:
             assert mock_accuracy.update.call_count == len(dataloader)
 
             # Check that accuracy was initialized with correct num_classes
-            mock_accuracy_class.assert_called_once_with(num_classes=5)
+            mock_accuracy_class.assert_called_once_with(num_classes=5, average="macro")
 
     def test_val_one_epoch_loss_accumulation(self):
         """Test that validation loss is properly accumulated"""
@@ -445,6 +445,112 @@ class TestLoopsIntegration:
                 calls = mock_accuracy_class.call_args_list
                 for call_args in calls:
                     assert call_args[1]["num_classes"] == num_classes
+                    assert call_args[1]["average"] == "macro"
+
+
+class TestBalancedAccuracy:
+    """Tests for balanced accuracy computation in MulticlassAccuracy"""
+
+    def test_balanced_accuracy_computation(self):
+        """Test that MulticlassAccuracy with average='macro' correctly computes balanced accuracy"""
+        # Create a scenario where regular accuracy != balanced accuracy
+        # to verify that balanced (macro) accuracy is being used
+
+        # Create imbalanced predictions and targets
+        # Class 0: 90% accuracy (9/10 correct)
+        # Class 1: 50% accuracy (1/2 correct)
+        # Class 2: 100% accuracy (1/1 correct)
+        # Regular accuracy would be: 11/13 = 84.6%
+        # Balanced accuracy would be: (90% + 50% + 100%) / 3 = 80%
+
+        from torchmetrics.classification import MulticlassAccuracy
+
+        # Create predictions and targets
+        predictions = torch.tensor(
+            [
+                [0.9, 0.05, 0.05],  # Correct for class 0
+                [0.9, 0.05, 0.05],  # Correct for class 0
+                [0.9, 0.05, 0.05],  # Correct for class 0
+                [0.9, 0.05, 0.05],  # Correct for class 0
+                [0.9, 0.05, 0.05],  # Correct for class 0
+                [0.9, 0.05, 0.05],  # Correct for class 0
+                [0.9, 0.05, 0.05],  # Correct for class 0
+                [0.9, 0.05, 0.05],  # Correct for class 0
+                [0.9, 0.05, 0.05],  # Correct for class 0
+                [0.05, 0.9, 0.05],  # Incorrect for class 0 (predicts class 1)
+                [0.05, 0.9, 0.05],  # Correct for class 1
+                [0.9, 0.05, 0.05],  # Incorrect for class 1 (predicts class 0)
+                [0.05, 0.05, 0.9],  # Correct for class 2
+            ]
+        )
+
+        targets = torch.tensor([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 2])
+
+        # Test with macro averaging (balanced accuracy)
+        metric_macro = MulticlassAccuracy(num_classes=3, average="macro")
+        metric_macro.update(predictions, targets)
+        balanced_acc = metric_macro.compute()
+
+        # Test with micro averaging (regular accuracy)
+        metric_micro = MulticlassAccuracy(num_classes=3, average="micro")
+        metric_micro.update(predictions, targets)
+        regular_acc = metric_micro.compute()
+
+        # Verify that we get different results
+        assert (
+            abs(balanced_acc - regular_acc) > 0.01
+        ), "Balanced and regular accuracy should differ for imbalanced data"
+
+        # Verify expected balanced accuracy
+        # Class 0: 9/10 = 0.9
+        # Class 1: 1/2 = 0.5
+        # Class 2: 1/1 = 1.0
+        # Balanced: (0.9 + 0.5 + 1.0) / 3 = 0.8
+        expected_balanced = (9 / 10 + 1 / 2 + 1 / 1) / 3
+        assert (
+            abs(balanced_acc - expected_balanced) < 0.01
+        ), f"Expected balanced accuracy {expected_balanced}, got {balanced_acc}"
+
+        # Verify that the loops use the same configuration
+        configs = jsonargparse.Namespace()
+        configs.data = jsonargparse.Namespace()
+        configs.data.num_classes = 3
+        configs.no_tqdm = True
+
+        with patch("torch.cuda.is_available", return_value=False), patch(
+            "framework.loops.MulticlassAccuracy"
+        ) as mock_accuracy_class:
+
+            model = MagicMock()
+            model.train = MagicMock()
+            mock_loss = MagicMock()
+            mock_loss.item.return_value = 0.5
+            mock_loss.backward = MagicMock()
+            mock_output = {
+                "logits": torch.randn(4, 3),
+                "loss": mock_loss,
+                "encoding": torch.randn(4, 128),
+            }
+            model.return_value = mock_output
+
+            images = torch.randn(4, 3, 32, 32)
+            labels = torch.randint(0, 3, (4,))
+            dataset = TensorDataset(images, labels)
+            dataloader = DataLoader(dataset, batch_size=4)
+
+            optimizer = MagicMock()
+            scheduler = MagicMock()
+            scheduler.get_last_lr.return_value = [0.001]
+
+            mock_accuracy = MagicMock()
+            mock_accuracy.compute.return_value = torch.tensor(0.8)
+            mock_accuracy.to.return_value = mock_accuracy
+            mock_accuracy_class.return_value = mock_accuracy
+
+            train_one_epoch(model, dataloader, optimizer, scheduler, configs)
+
+            # Verify MulticlassAccuracy was called with average="macro"
+            mock_accuracy_class.assert_called_with(num_classes=3, average="macro")
 
 
 class TestLoopsErrorHandling:
