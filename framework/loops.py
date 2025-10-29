@@ -9,6 +9,8 @@ from tqdm import tqdm
 
 from . import utils
 
+ACCURACY_MODE = "macro"
+
 
 def train_one_epoch(
     model: torch.nn.Module,
@@ -24,7 +26,9 @@ def train_one_epoch(
     # TODO: figure out how to handle this when we move to multi-GPU training (w/ DDP)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    accuracy = MulticlassAccuracy(num_classes=configs.data.num_classes).to(device)
+    accuracy = MulticlassAccuracy(
+        num_classes=configs.data.num_classes, average=ACCURACY_MODE
+    ).to(device)
 
     num_batches = len(dataloader)
     train_loss = 0.0
@@ -78,7 +82,9 @@ def val_one_epoch(
     # TODO: figure out how to handle this when we move to multi-GPU training (w/ DDP)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    accuracy = MulticlassAccuracy(num_classes=configs.data.num_classes).to(device)
+    accuracy = MulticlassAccuracy(
+        num_classes=configs.data.num_classes, average=ACCURACY_MODE
+    ).to(device)
 
     num_batches = len(dataloader)
     val_loss = 0.0
