@@ -40,4 +40,4 @@ def shutdown(model, optimizer, scheduler, configs, best_val_acc, curr_epoch):
         file.write(f"{best_val_acc}\n")
         file.write(f"{curr_epoch}\n")
 
-    sys.exit(42)
+    sys.exit(99)  # signal to requeue job

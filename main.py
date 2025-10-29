@@ -44,6 +44,10 @@ if __name__ == "__main__":
         eta_min=1e-6 / configs.opt.lr,
     )
 
+    # storage for metrics
+    best_val_acc = 0.0
+    start_epoch = 0
+
     # recover from shutdown if it happened
     if os.path.exists(os.path.join(configs.root, "partial.pth")):
         print("recovering from partial shutdown...")
@@ -58,18 +62,13 @@ if __name__ == "__main__":
             os.path.join(configs.root, "partial_stats.txt"), "r", encoding="utf-8"
         ) as file:
             best_val_acc = float(file.readline().strip())
-            curr_epoch = int(file.readline().strip())
-        print(f"resuming from epoch {curr_epoch}, ", end="")
-        print(f"recovered best val acc: {best_val_acc}")
-        # adjust epochs to account for already completed ones
-        configs.epochs -= curr_epoch
-
-    # storage for metrics
-    best_val_acc = 0.0
+            start_epoch = int(file.readline().strip())
+        print(f"resuming from epoch {start_epoch+1}, ", end="")
+        print(f"recovered best val acc: {best_val_acc:.3f}")
 
     # training loop
     if not configs.skip_train:
-        for epoch in range(configs.epochs):
+        for epoch in range(start_epoch, configs.epochs):
             if not fwk.utils.interrupted:
                 print(f"Epoch {epoch + 1}/{configs.epochs}")
 
