@@ -41,7 +41,7 @@ if __name__ == "__main__":
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
         optimizer,
         T_max=configs.epochs * len(dataloaders["train"]),
-        eta_min=1e-6 / configs.opt.lr,
+        eta_min=1e-9,
     )
 
     # storage for metrics
