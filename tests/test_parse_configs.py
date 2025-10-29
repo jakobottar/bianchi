@@ -123,6 +123,9 @@ class TestParseConfigsWithMocking:
                 import shutil
 
                 run_dir = configs.root
+                # Close the logger first to release file handles
+                if hasattr(configs, "close_logger"):
+                    configs.close_logger()
                 if os.path.exists(run_dir):
                     shutil.rmtree(run_dir)
 

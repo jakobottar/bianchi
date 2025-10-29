@@ -13,7 +13,7 @@ import jsonargparse
 import namegenerator
 import torch
 
-from .utils import signal_handler
+from .utils import set_current_logger, signal_handler
 
 
 def _dict_to_namespace(d):
@@ -67,14 +67,14 @@ def parse_configs() -> jsonargparse.Namespace:
 def _set_up_configs(configs: jsonargparse.Namespace) -> jsonargparse.Namespace:
     """Sets up configs after parsing"""
 
+    resume_message = None  # Store resume message to log later
+
     # see if there's already a run with this slurm job id
     # and load it if so
     if configs.slurm_job_id != -1:
         for name in os.listdir(configs.root):
             if name.startswith(f"{configs.slurm_job_id}_"):
-                print(
-                    f"found existing run with slurm job id {configs.slurm_job_id}, resuming"
-                )
+                resume_message = f"found existing run with slurm job id {configs.slurm_job_id}, resuming"
                 configs.name = name
                 # Store the current root and full path before loading
                 base_root = configs.root
@@ -94,6 +94,21 @@ def _set_up_configs(configs: jsonargparse.Namespace) -> jsonargparse.Namespace:
 
                 # Restore the correct root path
                 configs.root = run_path
+
+                # Set up logger for resumed run
+                logger, close_logger = _create_logger(
+                    os.path.join(configs.root, "job.log")
+                )
+                configs.logger = logger
+                configs.close_logger = close_logger
+                set_current_logger(logger)
+
+                # Register the signal handler
+                signal.signal(signal.SIGTERM, signal_handler)
+
+                # Now log the resume message
+                configs.logger(resume_message)
+
                 return configs
 
     # set name
@@ -134,4 +149,29 @@ def _set_up_configs(configs: jsonargparse.Namespace) -> jsonargparse.Namespace:
     # Register the signal handler
     signal.signal(signal.SIGTERM, signal_handler)
 
+    # set up logger
+    logger, close_logger = _create_logger(os.path.join(configs.root, "job.log"))
+    configs.logger = logger
+    configs.close_logger = close_logger
+
+    # Set current logger for global access
+    set_current_logger(logger)
+
     return configs
+
+
+def _create_logger(log_filename, display=True):
+    f = open(log_filename, "a", encoding="utf-8")
+    counter = [0]
+
+    # this function will still have access to f after create_logger terminates
+    def logger(text):
+        if display:
+            print(text)
+        f.write(str(text) + "\n")
+        counter[0] += 1
+        if counter[0] % 10 == 0:
+            f.flush()
+            os.fsync(f.fileno())
+
+    return logger, f.close
