@@ -4,7 +4,7 @@
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-gpu=8
 #SBATCH --gres=gpu:1
-#SBATCH --time=00:05:00
+#SBATCH --time=01:00:00
 #SBATCH --mem=16G
 #SBATCH --account=tolgalab
 #SBATCH --partition=spartacus,beasts,gods
