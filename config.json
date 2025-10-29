@@ -1,6 +1,7 @@
 {
     "model": {
-        "arch": "resnet50"
+        "arch": "resnet50",
+        "checkpoint": "imagenet"
     },
     "data": {
         "batch_size": 128,

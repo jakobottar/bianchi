@@ -161,7 +161,23 @@ def _build_resnet(configs: Namespace) -> nn.Module:
 
     # Load checkpoint if specified
     if configs.model.checkpoint is not None:
-        checkpoint = torch.load(configs.model.checkpoint)
-        model.load_state_dict(checkpoint["model_state_dict"], strict=False)
+        # load imagenet pretrained weights if config == 'imagenet'
+        if configs.model.checkpoint == "imagenet":
+            checkpoint = torch.hub.load_state_dict_from_url(
+                (
+                    "https://download.pytorch.org/models/resnet50-0676ba61.pth"
+                    if configs.model.arch.lower() == "resnet50"
+                    else "https://download.pytorch.org/models/resnet18-f37072fd.pth"
+                ),
+                progress=True,
+            )
+            # Remove fc layer weights to avoid size mismatch
+            checkpoint.pop("fc.weight", None)
+            checkpoint.pop("fc.bias", None)
+            model.load_state_dict(checkpoint, strict=False)
+
+        else:
+            checkpoint = torch.load(configs.model.checkpoint)
+            model.load_state_dict(checkpoint["model_state_dict"], strict=False)
 
     return model
