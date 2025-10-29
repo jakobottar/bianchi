@@ -81,7 +81,7 @@ class TestParseConfigsWithMocking:
                 # Command line should override config file
                 assert configs.data.batch_size == 32
                 assert configs.epochs == 10
-                assert configs.name == "override_test"
+                assert configs.name == "-1_override_test"  # Now includes slurm job id
 
                 # Values not overridden should come from config
                 assert configs.model.arch == "resnet18"
@@ -109,20 +109,23 @@ class TestParseConfigsWithMocking:
             with patch("sys.argv", test_args):
                 configs = parse_configs()
 
-                # Verify the integration worked
-                assert configs.name == "integration_test_run"
+                # Verify the integration worked (name now includes slurm job id)
+                assert configs.name == "-1_integration_test_run"
                 assert configs.seed == 42
                 assert configs.data.batch_size == 16
                 assert configs.epochs == 5
 
                 # Verify that set_up_configs was called (directory should exist)
                 assert os.path.exists(configs.root)
-                assert configs.root.endswith("integration_test_run")
+                assert configs.root.endswith("-1_integration_test_run")
 
                 # Clean up the created directory
                 import shutil
 
                 run_dir = configs.root
+                # Close the logger first to release file handles
+                if hasattr(configs, "close_logger"):
+                    configs.close_logger()
                 if os.path.exists(run_dir):
                     shutil.rmtree(run_dir)
 

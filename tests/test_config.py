@@ -26,15 +26,16 @@ class TestSetUpConfigs:
             configs = jsonargparse.Namespace()
             configs.name = "random"
             configs.seed = -1
+            configs.slurm_job_id = 420
             configs.root = temp_dir
             configs.config = None  # Add config key to avoid KeyError
 
             with patch("namegenerator.gen", return_value="test-generated-name"):
                 result_configs = _set_up_configs(configs)
 
-                assert result_configs.name == "test-generated-name"
+                assert result_configs.name == "420_test-generated-name"
                 assert os.path.exists(result_configs.root)
-                assert result_configs.root.endswith("test-generated-name")
+                assert result_configs.root.endswith("420_test-generated-name")
         finally:
             if os.path.exists(temp_dir):
                 shutil.rmtree(temp_dir)
@@ -47,14 +48,15 @@ class TestSetUpConfigs:
             configs = jsonargparse.Namespace()
             configs.name = "my_custom_run"
             configs.seed = -1
+            configs.slurm_job_id = 420
             configs.root = temp_dir
             configs.config = None  # Add config key to avoid KeyError
 
             result_configs = _set_up_configs(configs)
 
-            assert result_configs.name == "my_custom_run"
+            assert result_configs.name == "420_my_custom_run"
             assert os.path.exists(result_configs.root)
-            assert result_configs.root.endswith("my_custom_run")
+            assert result_configs.root.endswith("420_my_custom_run")
         finally:
             if os.path.exists(temp_dir):
                 shutil.rmtree(temp_dir)
@@ -67,6 +69,7 @@ class TestSetUpConfigs:
             configs = jsonargparse.Namespace()
             configs.name = "seeded_run"
             configs.seed = 42
+            configs.slurm_job_id = 420
             configs.root = temp_dir
             configs.config = None  # Add config key to avoid KeyError
 
@@ -91,6 +94,7 @@ class TestSetUpConfigs:
             configs = jsonargparse.Namespace()
             configs.name = "no_seed_run"
             configs.seed = -1
+            configs.slurm_job_id = 420
             configs.root = temp_dir
             configs.config = None  # Add config key to avoid KeyError
 
@@ -114,12 +118,13 @@ class TestSetUpConfigs:
             configs = jsonargparse.Namespace()
             configs.name = "test_dir_creation"
             configs.seed = -1
+            configs.slurm_job_id = 420
             configs.root = temp_dir
             configs.config = None  # Add config key to avoid KeyError
 
             result_configs = _set_up_configs(configs)
 
-            expected_path = os.path.join(temp_dir, "test_dir_creation")
+            expected_path = os.path.join(temp_dir, "420_test_dir_creation")
             assert result_configs.root == expected_path
             assert os.path.exists(expected_path)
             assert os.path.isdir(expected_path)
@@ -135,6 +140,7 @@ class TestSetUpConfigs:
             configs = jsonargparse.Namespace()
             configs.name = "config_save_test"
             configs.seed = -1
+            configs.slurm_job_id = -1
             configs.root = temp_dir
             configs.data = jsonargparse.Namespace()
             configs.data.batch_size = 16
@@ -167,6 +173,7 @@ class TestSetUpConfigs:
             configs = jsonargparse.Namespace()
             configs.name = "path_test"
             configs.seed = -1
+            configs.slurm_job_id = 420
             configs.root = temp_dir
             configs.some_path = Path("/some/test/path")
             configs.config = "config_path"
@@ -195,14 +202,15 @@ class TestConfigIntegration:
             configs = jsonargparse.Namespace()
             configs.name = "random"
             configs.seed = -1
+            configs.slurm_job_id = 420
             configs.root = temp_dir
             configs.config = None
 
             with patch("namegenerator.gen", return_value="mighty-zebra-42"):
                 result = _set_up_configs(configs)
 
-                assert result.name == "mighty-zebra-42"
-                assert "mighty-zebra-42" in result.root
+                assert result.name == "420_mighty-zebra-42"
+                assert "420_mighty-zebra-42" in result.root
         finally:
             if os.path.exists(temp_dir):
                 shutil.rmtree(temp_dir)
@@ -215,6 +223,7 @@ class TestConfigIntegration:
             configs = jsonargparse.Namespace()
             configs.name = "seed_test"
             configs.seed = 12345
+            configs.slurm_job_id = -1
             configs.root = temp_dir
             configs.config = None
 
@@ -254,6 +263,7 @@ class TestConfigIntegration:
             configs = jsonargparse.Namespace()
             configs.name = "test_creation"
             configs.seed = -1
+            configs.slurm_job_id = -1
             configs.root = temp_dir
             configs.config = None
             configs.model = jsonargparse.Namespace()
@@ -262,8 +272,8 @@ class TestConfigIntegration:
 
             result = _set_up_configs(configs)
 
-            # Check directory creation
-            expected_dir = os.path.join(temp_dir, "test_creation")
+            # Check directory creation (name now includes slurm job id)
+            expected_dir = os.path.join(temp_dir, "-1_test_creation")
             assert os.path.exists(expected_dir)
             assert os.path.isdir(expected_dir)
             assert result.root == expected_dir
@@ -275,7 +285,7 @@ class TestConfigIntegration:
             with open(config_file, "r", encoding="utf-8") as f:
                 saved_config = json.load(f)
 
-            assert saved_config["name"] == "test_creation"
+            assert saved_config["name"] == "-1_test_creation"
             assert saved_config["epochs"] == 10
             assert saved_config["model"]["arch"] == "resnet18"
             assert "config" not in saved_config  # Should be removed
@@ -292,14 +302,99 @@ class TestConfigIntegration:
             configs = jsonargparse.Namespace()
             configs.name = "robust_test"
             configs.seed = -1
+            configs.slurm_job_id = -1
             configs.root = temp_dir
             # No config key added - should work fine now
 
             result = _set_up_configs(configs)
 
-            assert result.name == "robust_test"
+        finally:
+            if os.path.exists(temp_dir):
+                shutil.rmtree(temp_dir)
+
+    def test_slurm_job_id_integration(self):
+        """Test that slurm job ID is properly integrated into names"""
+        temp_dir = tempfile.mkdtemp()
+
+        try:
+            # Test with positive slurm job ID
+            configs = jsonargparse.Namespace()
+            configs.name = "test_slurm"
+            configs.seed = -1
+            configs.slurm_job_id = 12345
+            configs.root = temp_dir
+            configs.config = None
+
+            result = _set_up_configs(configs)
+
+            assert result.name == "12345_test_slurm"
+            assert result.root.endswith("12345_test_slurm")
             assert os.path.exists(result.root)
-            assert result.root.endswith("robust_test")
+
+            # Test with random name and positive slurm job ID
+            configs2 = jsonargparse.Namespace()
+            configs2.name = "random"
+            configs2.seed = -1
+            configs2.slurm_job_id = 67890
+            configs2.root = temp_dir
+            configs2.config = None
+
+            with patch("namegenerator.gen", return_value="auto-generated-name"):
+                result2 = _set_up_configs(configs2)
+
+                assert result2.name == "67890_auto-generated-name"
+                assert result2.root.endswith("67890_auto-generated-name")
+                assert os.path.exists(result2.root)
+
+        finally:
+            if os.path.exists(temp_dir):
+                shutil.rmtree(temp_dir)
+
+    def test_slurm_job_resume_functionality(self):
+        """Test that slurm job resuming works correctly"""
+        temp_dir = tempfile.mkdtemp()
+
+        try:
+            # First, create a run directory with a config file (simulate existing run)
+            existing_run_name = "12345_existing_run"
+            existing_run_dir = os.path.join(temp_dir, existing_run_name)
+            os.makedirs(existing_run_dir)
+
+            # Create a config file for the existing run
+            existing_config = {
+                "name": existing_run_name,
+                "slurm_job_id": 12345,
+                "epochs": 50,
+                "data": {"batch_size": 64},
+                "model": {"arch": "resnet50"},
+            }
+
+            config_file_path = os.path.join(existing_run_dir, "config.json")
+            with open(config_file_path, "w", encoding="utf-8") as f:
+                json.dump(existing_config, f)
+
+            # Now test resuming with the same slurm job ID
+            configs = jsonargparse.Namespace()
+            configs.name = "different_name"  # This should be overridden
+            configs.seed = -1
+            configs.slurm_job_id = 12345  # Same as existing run
+            configs.root = temp_dir
+            configs.data = jsonargparse.Namespace()
+            configs.data.batch_size = 32  # Different from existing config
+            configs.epochs = 10  # Different from existing config
+
+            result = _set_up_configs(configs)
+
+            # Should have loaded the existing config
+            assert result.name == existing_run_name
+            assert result.epochs == 50  # From loaded config
+            assert (
+                result.data.batch_size == 64
+            )  # From loaded config (now proper namespace)
+            assert (
+                result.model.arch == "resnet50"
+            )  # From loaded config (now proper namespace)
+            assert result.root == existing_run_dir
 
         finally:
             if os.path.exists(temp_dir):
