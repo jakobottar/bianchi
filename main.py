@@ -89,5 +89,9 @@ if __name__ == "__main__":
     # final val loop with best model
     model.load_state_dict(torch.load(os.path.join(configs.root, "best.pth")))
     val_metrics = fwk.val_one_epoch(model, dataloaders["test"], configs)
+    configs.logger(
+        f"Final best model val loss: {val_metrics['val_loss']:.3f}, "
+        f"val acc: {val_metrics['val_acc']:.3f}"
+    )
 
     configs.logger("done!")
