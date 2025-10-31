@@ -27,7 +27,7 @@ class ResNet50(ResNet):
 
     def __init__(
         self,
-        loss_fn: nn.Module,
+        loss_fn: nn.Module | None = None,
         block=Bottleneck,
         layers=[3, 4, 6, 3],
         num_classes=1000,
@@ -70,6 +70,11 @@ class ResNet50(ResNet):
         out["encoding"] = feature
 
         if targets is not None:
+            if self.loss_fn is None:
+                raise ValueError(
+                    "Cannot compute loss: model was initialized without a loss function. "
+                    "Either provide a loss function during initialization or call forward() without targets."
+                )
             out["loss"] = self.loss_fn(logits_cls, targets)
 
         return out
@@ -85,7 +90,7 @@ class ResNet18(ResNet):
 
     def __init__(
         self,
-        loss_fn: nn.Module,
+        loss_fn: nn.Module | None = None,
         block=BasicBlock,
         layers=[2, 2, 2, 2],
         num_classes=1000,
@@ -128,6 +133,11 @@ class ResNet18(ResNet):
         out["encoding"] = feature
 
         if targets is not None:
+            if self.loss_fn is None:
+                raise ValueError(
+                    "Cannot compute loss: model was initialized without a loss function. "
+                    "Either provide a loss function during initialization or call forward() without targets."
+                )
             out["loss"] = self.loss_fn(logits_cls, targets)
 
         return out
@@ -136,22 +146,30 @@ class ResNet18(ResNet):
         return f"ResNet18(num_classes={self.fc.out_features}, loss_fn={self.loss_fn})"
 
 
-def _build_resnet(configs: Namespace) -> nn.Module:
-    """Builds a ResNet model based on the provided configurations"""
+def _build_resnet(configs: Namespace, with_loss_fn: bool = True) -> nn.Module:
+    """Builds a ResNet model based on the provided configurations
+
+    Args:
+        configs: Configuration namespace containing model parameters
+        with_loss_fn: Whether to include a loss function. If False, the model
+                     will be created without a loss function and will raise an
+                     error if forward() is called with targets.
+    """
 
     num_classes = configs.data.num_classes
+    loss_fn = nn.CrossEntropyLoss() if with_loss_fn else None
 
     match configs.model.arch.lower():
         case "resnet18":
             model = ResNet18(
-                loss_fn=nn.CrossEntropyLoss(),
+                loss_fn=loss_fn,
                 block=BasicBlock,
                 layers=[2, 2, 2, 2],
                 num_classes=num_classes,
             )
         case "resnet50":
             model = ResNet50(
-                loss_fn=nn.CrossEntropyLoss(),
+                loss_fn=loss_fn,
                 block=Bottleneck,
                 layers=[3, 4, 6, 3],
                 num_classes=num_classes,
@@ -209,7 +227,9 @@ class ModelTemplate(nn.Module):
         **kwargs: Additional architecture-specific parameters
     """
 
-    def __init__(self, loss_fn: nn.Module, num_classes: int = 1000, **kwargs):
+    def __init__(
+        self, loss_fn: nn.Module | None = None, num_classes: int = 1000, **kwargs
+    ):
         super(ModelTemplate, self).__init__()
 
         # Store essential attributes
@@ -286,6 +306,11 @@ class ModelTemplate(nn.Module):
 
         # Compute loss if targets are provided
         if targets is not None:
+            if self.loss_fn is None:
+                raise ValueError(
+                    "Cannot compute loss: model was initialized without a loss function. "
+                    "Either provide a loss function during initialization or call forward() without targets."
+                )
             out["loss"] = self.loss_fn(logits, targets)
 
         return out
@@ -311,7 +336,7 @@ class CNNTemplate(nn.Module):
 
     def __init__(
         self,
-        loss_fn: nn.Module,
+        loss_fn: nn.Module | None = None,
         num_classes: int = 1000,
         input_channels: int = 3,
         hidden_dims: list = [64, 128, 256, 512],
@@ -384,6 +409,11 @@ class CNNTemplate(nn.Module):
         }
 
         if targets is not None:
+            if self.loss_fn is None:
+                raise ValueError(
+                    "Cannot compute loss: model was initialized without a loss function. "
+                    "Either provide a loss function during initialization or call forward() without targets."
+                )
             out["loss"] = self.loss_fn(logits, targets)
 
         return out
@@ -415,7 +445,7 @@ class TransformerTemplate(nn.Module):
 
     def __init__(
         self,
-        loss_fn: nn.Module,
+        loss_fn: nn.Module | None = None,
         num_classes: int = 1000,
         embed_dim: int = 768,
         num_heads: int = 12,
@@ -515,6 +545,11 @@ class TransformerTemplate(nn.Module):
         }
 
         if targets is not None:
+            if self.loss_fn is None:
+                raise ValueError(
+                    "Cannot compute loss: model was initialized without a loss function. "
+                    "Either provide a loss function during initialization or call forward() without targets."
+                )
             out["loss"] = self.loss_fn(logits, targets)
 
         return out
@@ -532,7 +567,7 @@ class TransformerTemplate(nn.Module):
 # ========================================
 
 
-def _build_template_model(configs: Namespace) -> nn.Module:
+def _build_template_model(configs: Namespace, with_loss_fn: bool = True) -> nn.Module:
     """
     TEMPLATE: Builder function for new model architectures
 
@@ -557,11 +592,12 @@ def _build_template_model(configs: Namespace) -> nn.Module:
     """
 
     num_classes = configs.data.num_classes
+    loss_fn = nn.CrossEntropyLoss() if with_loss_fn else None
 
     # Create your model instance
     # Replace this with your actual model constructor
     model = ModelTemplate(
-        loss_fn=nn.CrossEntropyLoss(),
+        loss_fn=loss_fn,
         num_classes=num_classes,
         # Add any architecture-specific parameters from configs:
         # hidden_dims=configs.model.get('hidden_dims', [64, 128, 256]),
